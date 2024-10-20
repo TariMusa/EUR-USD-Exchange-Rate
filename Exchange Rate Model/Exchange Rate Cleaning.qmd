@@ -1,0 +1,279 @@
+---
+title: "Exchange Rate Cleaning"
+execute: 
+  warning: false
+author: "Tariro Musarandega"
+format:
+  html: 
+    embed-resources: true
+---
+
+```{r}
+library(dplyr)
+library(here)
+library(knitr)
+library(readxl)
+library(forcats)
+library(tidyverse)
+```
+
+```{r}
+#| output: false
+ECB_Supply <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/ECB Money Supply.csv'))
+US_Supply <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/USA money Supply.csv'))
+EPU <- read_xlsx(here('/Users/tariromusarandega/EUR: USD prediction/EPU Indices.xlsx'))
+Hist_Rate <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/euro-dollar-exchange-rate-historical-chart.csv'))
+FDI <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/Foreign Direct Investment.csv'))
+GDP_Growth <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/GDP Growth.csv'))
+Inflation <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/Inflation Rates.csv'))
+BOP <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/Net Trade BOP.csv'))
+Unemployment <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/Unemployment Rates.csv'))
+ECB_EPU <- read.csv(here('/Users/tariromusarandega/EUR: USD prediction/EPU Eurozone.csv'))
+Happiness <- read_csv(here('/Users/tariromusarandega/World Happiness Data/Human-Progress-World-Happiness-Report 2005 - 2022csv.csv'))
+```
+
+
+```{r}
+#| output: false
+ECB_Supply <- 
+  ECB_Supply |>
+  rename(Supply = Monetary.aggregate.M2.reported.by.MFIs..central.gov..and.post.office.giro.institutions.in.the.euro.area..stocks...BSI.M.U2.Y.V.M20.X.1.U2.2300.Z01.E.) |>
+  mutate(date = as.Date(DATE)) |>
+  separate(col = TIME.PERIOD, into = c("year", "month"), sep = 4) |>
+  mutate(year = as.numeric(year)) |>
+  select(5, 2, 3, 4)
+str(ECB_Supply)
+```
+
+```{r}
+# Rescale US money supply data to the range of Eurozone data
+rescale_to_range <- function(x, min_target, max_target) {
+  ((x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))) *
+    (max_target - min_target) + min_target
+}
+
+# Apply to US data
+min_eu <- min(ECB_Supply$Supply, na.rm = TRUE)
+max_eu <- max(ECB_Supply$Supply, na.rm = TRUE)
+
+US_Supply$rescaled_value <- rescale_to_range(US_Supply$M2SL, min_eu, max_eu)
+
+```
+
+```{r}
+US_Supply <-
+  US_Supply |>
+  rename(date = DATE) |>
+  rename(US_Supply = rescaled_value) |>
+  select(1, 3) |>
+  mutate(date = as.Date(date)) |> 
+  mutate(temp = date) |>
+  separate(col = temp, into = c("year", "month", "temp"), sep = "-") |>
+  mutate(month = case_when(month == "01" ~ "Jan",
+                            month == "02" ~ "Feb",
+                            month == "03" ~ "Mar",
+                            month == "04" ~ "Apr",
+                            month == "05" ~ "May",
+                            month == "06" ~ "Jun",
+                            month == "07" ~ "Jul",
+                            month == "08" ~ "Aug",
+                            month == "09" ~ "Sep",
+                            month == "10" ~ "Oct",
+                            month == "11" ~ "Nov",
+                            month == "12" ~ "Dec",
+                            TRUE ~ month  # Keep original if no match
+                          )) |>
+  select(1, 3, 4, 2) |>
+  mutate(year = as.numeric(year))
+```
+
+
+```{r}
+str(EPU)
+```
+
+```{r}
+US_EPU <- 
+  EPU |>
+  mutate(Year = as.numeric(Year)) |>
+  mutate(Month = as.character(Month)) |>
+  mutate(Month = case_when(Month == "1" ~ "Jan",
+                            Month == "2" ~ "Feb",
+                            Month == "3" ~ "Mar",
+                            Month == "4" ~ "Apr",
+                            Month == "5" ~ "May",
+                            Month == "6" ~ "Jun",
+                            Month == "7" ~ "Jul",
+                            Month == "8" ~ "Aug",
+                            Month == "9" ~ "Sep",
+                            Month == "10" ~ "Oct",
+                            Month == "11" ~ "Nov",
+                            Month == "12" ~ "Dec",
+                            TRUE ~ Month  # Keep original if no match
+                          )) |>
+  select(1, 2, 23) |>
+  rename(year = Year) |>
+  rename(month = Month) |>
+  rename(US_EPU = US)
+```
+
+```{r}
+str(ECB_EPU)
+ECB_EPU <- 
+  ECB_EPU |>
+  mutate(DATE = as.Date(DATE)) |>
+  rename(ECB_EPU = EUEPUINDXM) |>
+  rename(date = DATE)
+```
+
+```{r}
+str(Hist_Rate)
+Hist_Rate <- 
+  Hist_Rate |> 
+  mutate(date = as.Date(date, format = "%m/%d/%y"))
+  
+```
+
+```{r}
+str(FDI)
+FDI <- 
+  FDI |>
+  filter(Country.Name == "Euro area" | Country.Name == "United States") |>
+  pivot_longer(cols = c(5:68), names_to = "Year", values_to = "FDI") |>
+  separate(col = Year, into = c("temp", "year"), sep = 1) |>
+  mutate(year = as.numeric(year)) |>
+  select(1, 2, 6, 7) |>
+  pivot_wider(names_from = c(Country.Name, Country.Code), values_from = FDI, names_prefix = "FDI_")
+```
+
+```{r}
+str(GDP_Growth)
+GDP_Growth <-
+  GDP_Growth |>
+  filter(Country.Name == "Euro area" | Country.Name == "United States") |>
+  pivot_longer(cols = c(5:68), names_to = "Year", values_to = "GDP_Growth") |>
+  separate(col = Year, into = c("temp", "year"), sep = 1) |>
+  select(1, 2, 6, 7) |>
+  mutate(year = as.numeric(year)) |>
+  pivot_wider(names_from = c(Country.Name, Country.Code), values_from = GDP_Growth, names_prefix = "GDP_")
+  
+```
+
+```{r}
+str(Inflation)
+Inflation <-
+  Inflation |>
+  filter(Country.Name == "Euro area" | Country.Name == "United States") |>
+  pivot_longer(cols = c(5:68), names_to = "Year", values_to = "Inflation") |>
+  separate(col = Year, into = c("temp", "year"), sep = 1) |>
+  select(1, 2, 6, 7) |>
+  pivot_wider(names_from = c(Country.Name, Country.Code), values_from = Inflation, names_prefix = "Infl_") |>
+  mutate(year = as.numeric(year))
+```
+
+```{r}
+str(BOP)
+BOP <- 
+  BOP |>
+  filter(Country.Name == "Euro area" | Country.Name == "United States") |>
+  pivot_longer(cols = c(5:68), names_to = "Year", values_to = "BOP") |>
+  separate(col = Year, into = c("temp", "year"), sep = 1) |>
+  select(1, 2, 6, 7) |>
+  pivot_wider(names_from = c(Country.Name, Country.Code), values_from = BOP, names_prefix = "BOP_") |>
+  mutate(year = as.numeric(year))
+```
+
+```{r}
+str(Unemployment)
+Unemployment <- 
+  Unemployment |> 
+  filter(Country.Name == "Euro area" | Country.Name == "United States") |>
+  pivot_longer(cols = c(5:68), names_to = "Year", values_to = "Unemployment") |>
+  separate(col = Year, into = c("temp", "year"), sep = 1) |>
+  select(1, 2, 6, 7) |>
+  pivot_wider(names_from = c(Country.Name, Country.Code), values_from = Unemployment, names_prefix = "UnEmp_") |>
+  mutate(year = as.numeric(year))
+  
+```
+
+```{r}
+unique(Happiness$`2005`)
+```
+
+
+```{r}
+str(Happiness) 
+
+eurozone_countries <- c("Austria", "Belgium", "Cyprus", "Estonia", "Finland", 
+                        "France", "Germany", "Greece", "Ireland", "Italy", 
+                        "Latvia", "Lithuania", "Luxembourg", "Malta", 
+                        "Netherlands", "Portugal", "Slovakia", "Slovenia", 
+                        "Spain")
+
+
+Happiness <-
+  Happiness |>
+  mutate(`2005` = as.character(`2005`)) |>
+  mutate(`2022` = as.character(`2005`)) |>
+  filter(country_name %in% eurozone_countries | country_name == "United States") |>
+  pivot_longer(cols = c(2:19), names_to = "year", values_to = "HI") |> 
+  mutate(Eurozone_Status = case_when (
+    country_name %in% eurozone_countries ~ "Eurozone",
+    country_name == "United States" ~ "USA")) |>
+  mutate(HI = as.numeric(HI)) |>
+  group_by(year, Eurozone_Status) |>
+  summarise(HI = median(HI, na.rm = TRUE)) |>
+  ungroup() |>
+  pivot_wider(names_from = c(Eurozone_Status), values_from = HI, names_prefix = "HI_") |>
+  mutate(year = as.numeric(year)) 
+```
+
+
+
+```{r}
+temp1 <- 
+  full_join(US_Supply, ECB_Supply, by = c("date")) |>
+  select(-c(5,6)) |>
+  rename(ECB_Supply = Supply) |>
+  rename(year = year.x) |>
+  rename(month = month.x)
+
+temp2 <- 
+  full_join(temp1, US_EPU, by = c("year", "month")) |>
+  group_by(year, month) |>
+  slice(1)
+
+temp3 <-
+  full_join(temp2, ECB_EPU, by = "date")
+
+temp4 <-
+  full_join(temp3, Hist_Rate, by = "date") |>
+  rename(hist_rate = value)
+
+temp5 <- 
+  full_join(temp4, FDI, by = "year")
+
+temp6 <-
+  full_join(temp5, GDP_Growth, by = "year")
+
+temp7 <-
+  full_join(temp6, Inflation, by = "year")
+
+temp8 <- 
+  full_join(temp7, BOP, by = "year") 
+
+temp9 <- 
+  full_join(temp8, Unemployment, by = "year") 
+
+Exchange_clean <- 
+  full_join(temp9, Happiness, by = "year")
+```
+
+```{r}
+write.csv(Exchange_clean, 
+          "/Users/tariromusarandega/data/Exchange_clean.csv", 
+          row.names = FALSE, 
+          fileEncoding = "UTF-8")
+
+```
+
