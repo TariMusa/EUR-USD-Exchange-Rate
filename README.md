@@ -1,96 +1,53 @@
-Online Retail Store Analytics
+EUR/USD Exchange Rate Prediction Model
 
-This project simulates an e-commerce platform's relational database to analyze key business metrics like sales trends, product performance, customer churn, and more. It demonstrates SQL skills in managing relational databases with PostgreSQL.
+￼
+This project aims to predict the EUR/USD exchange rate using a machine learning model developed in Python. Leveraging TensorFlow, the model achieves a Mean Squared Error (MSE) of 0.0014, demonstrating high accuracy in predicting exchange rates.
+Key Features
+	•	Machine Learning Approach: Utilizes TensorFlow for model development, allowing for effective training and prediction of exchange rate fluctuations.
+	•	Data Collection and Cleaning: Conducted extensive data wrangling in R, primarily acquiring data through an API connection from the World Bank data site.
 
-Project Structure
-Database Name: online_retail_store
+Technologies Used
+	•	Python
+	•	TensorFlow
+	•	RStudio
+	•	GeoPandas
+	•	Matplotlib
+	•	Jupyter Notebook
 
-Tables:
-customers: Stores customer information.
-products: Contains product details.
-orders: Tracks orders and their status.
-order_details: Details of each order.
-reviews: Holds customer feedback for products.
+Getting Started
+To run the project locally, follow these steps:
+	1	Clone the repository:  https://github.com/TariMusa/TariMusa 
+	2	Install required libraries: Make sure you have Python and pip installed. Then, install the necessary packages:  pip install pandas numpy tensorflow scikit-learn matplotlib pandas
+	3	Data Preparation: Cleaned Dataset downloadable in Github repository, also available the R Code used to prepare the data, alternatively:
+	⁃	Download the required datasets:
+	⁃	https://data.ecb.europa.eu/
+	⁃	https://www.policyuncertainty.com/all_country_data.html - https://www.policyuncertainty.com/media/All_Country_Data.xlsx
+	⁃	https://www.macrotrends.net/
+	⁃	https://fred.stlouisfed.org/series/M2SL
+	⁃	https://fred.stlouisfed.org/series/EUEPUINDXM
+	⁃	Sample  World Bank API python request code in repository.
+	⁃	
+	⁃	Run the R script for data cleaning: Rscript data_cleaning.R
+	1	 Run the model: Execute the main script:
+	 
+	2	Visualizations: Open the Jupyter Notebook to explore the visualizations.
+Results
+The model successfully predicts the EUR/USD exchange rate with a Mean Squared Error of 0.0014. In practical terms, this means our predictions are typically within 0.037 (square root of 0.0014) of the actual exchange rate.
 
-How to Run the Project
+Model Details
+Our model uses a Long Short-Term Memory (LSTM) neural network architecture, which is particularly well-suited for time series prediction tasks like exchange rate forecasting. The model takes into account historical exchange rates, as well as relevant economic indicators from both the Eurozone and the United States.
 
-Prerequisites
-PostgreSQL installed on your machine.
-pgAdmin (optional) for easier database management.
-Java or Python (optional) to generate and insert large datasets.
-
-Step-by-Step Guide
-1. Create the Database:
-Open a PostgreSQL terminal or pgAdmin and run:
-    CREATE DATABASE online_retail_store;
-
-2. Create Tables:
-Use the SQL script below to create the necessary tables:
-    -- Customers Table
-    CREATE TABLE Customers (
-        customer_id SERIAL PRIMARY KEY,
-        name VARCHAR(100),
-        email VARCHAR(100),
-        join_date DATE
-    );
-
-    -- Products Table
-    CREATE TABLE Products (
-        product_id SERIAL PRIMARY KEY,
-        product_name VARCHAR(100),
-        category VARCHAR(50),
-        price NUMERIC(10, 2)
-    );
-
-    -- Orders Table
-    CREATE TABLE Orders (
-        order_id SERIAL PRIMARY KEY,
-        customer_id INT REFERENCES Customers(customer_id),
-        order_date DATE,
-        total_amount NUMERIC(10, 2)
-    );
-
-    -- OrderDetails Table
-    CREATE TABLE OrderDetails (
-        order_id INT REFERENCES Orders(order_id),
-        product_id INT REFERENCES Products(product_id),
-        quantity INT,
-        price INT
-    );
-
-    -- Reviews Table
-    CREATE TABLE Reviews (
-        review_id SERIAL PRIMARY KEY,
-        product_id INT REFERENCES Products(product_id),
-        customer_id INT REFERENCES Customers(customer_id),
-        rating INT CHECK (rating BETWEEN 1 AND 5),
-        review_date DATE,
-        review_text TEXT
-    );
-
-3. Insert Sample Data:
-You can insert sample data manually or generate a large dataset with Java or Python. Here's an example for manual insertion:
-    INSERT INTO customers (name, email, join_date, region)
-    VALUES ('John Doe', 'john.doe@example.com', '2023-02-15', 'North America');
-Alternatively, run my Java Code 'DataGenerator' that will automatically generate and enter the data into your SQL tables.
-
-4. Run Queries:
-Use SQL queries to extract insights. Some examples are in the EcormmerceQueries file.
-
-Features Demonstrated
-SQL Transactions: Ensures consistent order processing.
-Joins and Views: Analyze data across multiple tables.
-Window Functions: Track customer purchase behavior over time.
-Aggregate Functions: Monitor revenue and sales trends.
-
-Future Improvements
-Implement triggers to update stock levels automatically.
-Add user authentication for a multi-user system.
-Integrate with Tableau or Power BI for enhanced reporting.
-
-Conclusion
-This project showcases essential relational database management skills through the lens of an e-commerce platform. It provides hands-on experience with SQL, from table creation to advanced queries, and demonstrates how relational databases can support analytics and business insights.
-
+Data Sources
+We primarily use data from the World Bank, accessed through their API and datasets from FRED. The model is only for education purposes and should not be used for trading, consistent with the terms of use of these datasets.
+Contributing
+We welcome contributions to improve the model's accuracy or extend its capabilities.
+Contributions
+	•	Collaborated with a team to enhance the model's accuracy through testing and validation.
+	•	Shared knowledge and best practices to foster a collaborative environment.
 License
 This project is not licensed.
+Acknowledgments
+	•	World Bank for providing the data
+	•	TensorFlow team for their excellent machine learning framework
+	•	All contributors who have helped to improve this project
 
